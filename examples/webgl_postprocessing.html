@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - postprocessing</title>
+		<meta charset="utf-8">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #000000;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="../build/three.min.js"></script>
+
+		<script src="js/shaders/CopyShader.js"></script>
+		<script src="js/shaders/DotScreenShader.js"></script>
+		<script src="js/shaders/RGBShiftShader.js"></script>
+
+		<script src="js/postprocessing/EffectComposer.js"></script>
+		<script src="js/postprocessing/RenderPass.js"></script>
+		<script src="js/postprocessing/MaskPass.js"></script>
+		<script src="js/postprocessing/ShaderPass.js"></script>
+
+
+		<script>
+		var stores, storeb, spread;
+			var camera, scene, renderer, composer;
+			var object, light;
+
+			function getRandomInt(min, max) {
+			  return Math.floor(Math.random() * (max - min)) + min;
+			}
+
+			init();
+			animate();
+
+			function init() {
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+				//
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.z = 1500;
+
+				scene = new THREE.Scene();
+				
+
+				object = new THREE.Object3D();
+				scene.add( object );
+
+				var geometry = new THREE.SphereGeometry( 1, 4, 8 );
+				var material = new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading, transparent: true, wireframe: true } );
+
+				for ( var i = 0; i < 400; i ++ ) {
+
+					var mesh = new THREE.Mesh( geometry, material );
+					mesh.position.set( getRandomInt(-100, 100)/100, getRandomInt(-100, 100)/100, getRandomInt(-100, 100)/100 ).normalize();
+					mesh.position.multiplyScalar( Math.random() * 800 );
+					mesh.rotation.set( Math.random() * 2, Math.random() * 2, Math.random() * 2 );
+					mesh.scale.x = mesh.scale.y = mesh.scale.z = Math.random() * 50;
+					object.add( mesh );
+
+				}
+
+				scene.add( new THREE.AmbientLight( 0xaaaaaa ) );
+
+				light = new THREE.DirectionalLight( 0x000000 );
+				light.position.set( 1, 1, 1);
+				scene.add( light );
+
+				// postprocessing
+
+				composer = new THREE.EffectComposer( renderer );
+				composer.addPass( new THREE.RenderPass( scene, camera ) );
+
+				var effect = new THREE.ShaderPass( THREE.DotScreenShader );
+				effect.uniforms[ 'scale' ].value = 5;
+				storeb = effect;
+				composer.addPass( effect );
+
+				var effect = new THREE.ShaderPass( THREE.RGBShiftShader );
+				effect.uniforms[ 'amount' ].value = Math.sin(Math.random())/40;
+				effect.renderToScreen = true;
+				stores = effect;
+				composer.addPass( effect );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+			
+			var i = 100;
+			var goBack = false;
+
+			function animate() {
+			
+				requestAnimationFrame( animate );
+			
+				var rotY = Math.abs(Math.random()/(Math.abs(Math.tan(i)*10)));
+				var transZ = (getRandomInt(10,200)/6)/10 + Math.sin(i);
+			
+				if (!isNaN(transZ) && transZ !== Infinity && !goBack) {
+					object.translateZ(transZ*0.6);
+				}
+				if (object.position.z <= -200) {
+					called = false;
+					goBack = false;
+				}
+
+				if (object.position.z >= 800) {
+					goBack = true;
+				}
+
+				if (!isNaN(transZ) && transZ !== Infinity && goBack) {
+					object.translateZ(-(transZ)*8);
+					i = 0;
+				}
+
+				object.scale.set(
+					1, 
+					Math.max((getRandomInt(-3,1)*Math.sin(i/20)/10)+1, 1.2), 
+					Math.max(((getRandomInt(-3,1)*Math.sin(i/20)/10)+1), 1)
+				);
+
+				if (i % Math.round(getRandomInt(1,150) * 2) === 0 && !goBack) {
+					for (var j = 0; j < object.children.length; j++) {
+						object.children[j].position.set( getRandomInt(-100, 100)/100, getRandomInt(-100, 100)/200, getRandomInt(-100, 100)/100 ).normalize();
+						object.children[j].position.multiplyScalar( Math.random() * Math.max(Math.cos(i/20)*getRandomInt(550, 900), 550) );
+					}
+				}
+				
+				if (i % 2 === 0) {
+					storeb.uniforms[ 'scale' ].value = Math.cos(Math.random())*i*1000;
+				}
+
+				if (i % 20 === 0) {
+				stores.uniforms[ 'amount' ].value = Math.cos(i)/100;
+				stores.uniforms[ 'angle' ].value = Math.random()*i;
+				}
+				
+				if ( i % 106 === 0 || i % 160 === 0 || i % 100 === 0) {
+					stores.uniforms[ 'angle' ].value = Math.random()*i*100;
+					stores.uniforms[ 'amount' ].value = (Math.cos(i)/(150/(object.position.z/100)));
+				}
+
+				i++;
+
+				composer.render();
+
+			}
+
+		</script>
+
+	</body>
+</html>

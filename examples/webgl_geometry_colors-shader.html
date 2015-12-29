@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - geometry - vertex colors</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #808080;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+
+				background-color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+			}
+
+			a {
+
+				color: #0080ff;
+			}
+
+		</style>
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<div id="info"><a href="http://threejs.org" target="_blank">three.js</a> webgl - vertex colors</div>
+
+		<script src="../build/three.min.js"></script>
+
+		<script src="js/Detector.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+		<script src="js/objects/ShadowMesh.js"></script>
+		<script id="particleVertexShader" type="x-shader/x-vertex">
+		    precision highp float;
+		    precision highp int;
+		    attribute vec3 color;
+		    attribute float pSize;
+		    attribute float pOpacity;
+		    uniform float size;
+		    uniform float scale;
+		    varying vec3 vColor;
+		    varying float vOpacity;
+		    void main() {
+		        vColor = color;
+		        vOpacity = pOpacity;
+		        vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+		        gl_PointSize = 2.0 * pSize * size * ( scale / length( mvPosition.xyz ) );
+		        gl_Position = projectionMatrix * mvPosition;
+		    }
+		</script>
+
+		<script id="particleFragmentShader" type="x-shader/x-fragment">
+		    precision highp float;
+		    precision highp int;
+		    uniform vec3 psColor;
+		    uniform float opacity;
+		    varying vec3 vColor;
+		    varying float vOpacity;
+		    uniform sampler2D map;
+		    void main() {
+		        gl_FragColor = vec4( psColor, vOpacity );
+		        gl_FragColor = gl_FragColor * texture2D( map, vec2( gl_PointCoord.x, 1.0 - gl_PointCoord.y ) );
+		        gl_FragColor = gl_FragColor * vec4( vColor, 1.0 );
+		    }
+		</script>
+
+		<script>
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var container, stats;
+			var clock = new THREE.Clock();
+			var camera, scene, renderer;
+ var cylinder;
+			var mesh, group1, groupShadow, group2, group3, light;
+			var lightSphere, lightHolder;
+			var mouseX = 0, mouseY = 0;
+
+			var horizontalAngle = 0;
+
+			var lightPosition4D = new THREE.Vector4();
+			var ps;
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+var particleSystem;
+			var TWO_PI = Math.PI * 2;
+
+			// create the particle variables
+			var particleCount = 5,
+			    particles = new THREE.Geometry(),
+			    pMaterial = new THREE.ParticleBasicMaterial({
+			      color: 0x222222,
+			      size: 20
+			    });
+
+			var normalVector = new THREE.Vector3( 0, 1, 0 );
+			var planeConstant = 0.01; // this value must be slightly higher than the groundMesh's y position of 0.0
+			var groundPlane = new THREE.Plane( normalVector, planeConstant );
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.getElementById( 'container' );
+
+				camera = new THREE.PerspectiveCamera( 20, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 2000;
+
+				scene = new THREE.Scene();
+
+				light = new THREE.DirectionalLight( 0xffffff );
+				light.position.set( 0, 10, 500 );
+				light.lookAt(scene.position);
+				scene.add( light );
+
+				lightPosition4D.x = light.position.x;
+				lightPosition4D.y = light.position.y;
+				lightPosition4D.z = light.position.z;
+				// amount of light-ray divergence. Ranging from:
+				// 0.001 = sunlight(min divergence) to 1.0 = pointlight(max divergence)
+				lightPosition4D.w = 0.001; // must be slightly greater than 0, due to 0 causing matrixInverse errors
+
+				// shadow
+
+				var canvas = document.createElement( 'canvas' );
+				canvas.width = 128;
+				canvas.height = 128;
+
+				var context = canvas.getContext( '2d' );
+				var gradient = context.createRadialGradient( canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2 );
+				gradient.addColorStop( 0.1, 'rgba(210,210,210,1)' );
+				gradient.addColorStop( 1, 'rgba(255,255,255,1)' );
+
+				context.fillStyle = gradient;
+				context.fillRect( 0, 0, canvas.width, canvas.height );
+
+				var faceIndices = [ 'a', 'b', 'c', 'd' ];
+
+				var color, f, f2, f3, p, n, vertexIndex,
+
+					radius = 50,
+
+					geometry  = new THREE.IcosahedronGeometry( radius, 1 );
+
+				for ( var i = 0; i < geometry.faces.length; i ++ ) {
+
+					f  = geometry.faces[ i ];
+
+					n = ( f instanceof THREE.Face3 ) ? 3 : 4;
+
+					for( var j = 0; j < n; j++ ) {
+
+						vertexIndex = f[ faceIndices[ j ] ];
+
+						p = geometry.vertices[ vertexIndex ];
+
+						color = new THREE.Color( 0xffffff );
+						color.setHSL( ( p.y / radius + 1 ) / 2, 1.0, 0.5 );
+
+						f.vertexColors[ j ] = color;
+
+					}
+
+				}
+
+
+				var materials = [
+
+					new THREE.MeshLambertMaterial( { color: 0xffffff, shading: THREE.FlatShading, vertexColors: THREE.VertexColors } ),
+					new THREE.MeshBasicMaterial( { color: 0x000000, shading: THREE.FlatShading, wireframe: true, transparent: true, wireframe: true } )
+
+				];
+
+				group1 = THREE.SceneUtils.createMultiMaterialObject( geometry, materials );
+				group1.position.x = 0;
+				group1.rotation.x = 0;
+				scene.add( group1 );
+
+				groupShadow = new THREE.ShadowMesh( group1 );
+				scene.add( groupShadow );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setClearColor( 0xffffff );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
+
+
+				// now create the individual particles
+				for (var p = 0; p < particleCount; p++) {
+
+				  // create a particle with random
+				  // position values, -250 -> 250
+				  var pX = Math.random() * 100 - 50,
+				      pY = Math.random() * 100 - 50,
+				      pZ = Math.random() * 100 - 50,
+				      particle = new THREE.Vector3(pX, pY, pZ)
+				      // create a velocity vector
+				      particle.velocity = new THREE.Vector3(
+				        0,              // x
+				        Math.random(), // y: random vel
+				        0);             // z
+
+				  // add it to the geometry
+				  particles.vertices.push(particle);
+				}
+
+				// create the particle system
+				particleSystem = new THREE.PointCloud(
+				    particles,
+				    pMaterial);
+
+				// add it to the scene
+				group1.add(particleSystem);
+
+
+				// PARTICLES
+				// var particles = 50;
+
+				// var pGeometry = new THREE.BufferGeometry();
+
+				// var pPositions = new Float32Array( particles * 3 );
+				// var pColors = new Float32Array( particles * 3 );
+
+				// var pColor = new THREE.Color();
+
+				// var n = 100, n2 = n / 2; // particles spread in the cube
+
+				// for ( var i = 0; i < pPositions.length; i += 3 ) {
+
+				// 	// positions
+
+				// 	var x = 1 * Math.random() * (2.2*radius) - (1.2 * radius);
+				// 	var y = 1 * Math.random() * (2.2*radius) - (1.2 * radius);
+				// 	var z = 1 * Math.random() * (2.2*radius) - (1.5 * radius)+radius;
+
+				// 	pPositions[ i ]     = x;
+				// 	pPositions[ i + 1 ] = y;
+				// 	pPositions[ i + 2 ] = z;
+
+				// 	// colors
+
+				// 	var vx = ( x / n ) + 0.5;
+				// 	var vy = ( y / n ) + 0.5;
+				// 	var vz = ( z / n ) + 0.5;
+
+				// 	pColor.setRGB( 0.2, 0.2, 0.2 );
+
+				// 	pColors[ i ]     = pColor.r;
+				// 	pColors[ i + 1 ] = pColor.g;
+				// 	pColors[ i + 2 ] = pColor.b;
+				// }
+
+				// pGeometry.addAttribute( 'position', new THREE.BufferAttribute( pPositions, 3 ) );
+				// pGeometry.addAttribute( 'color', new THREE.BufferAttribute( pColors, 3 ) );
+
+				// pGeometry.computeBoundingSphere();
+
+				// //
+
+				// var pMaterial = new THREE.PointCloudMaterial( { size: 15, vertexColors: THREE.VertexColors } );
+
+				// particleSystem = new THREE.PointCloud( pGeometry, pMaterial );
+				group1.add( particleSystem );
+				setupParticleSystem(100, 100);
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				mouseX = ( event.clientX - windowHalfX );
+				mouseY = ( event.clientY - windowHalfY );
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+var step = 0;
+			function render() {
+				frameTime = clock.getDelta();
+
+				horizontalAngle += 0.8 * frameTime;
+				if (horizontalAngle > TWO_PI) {
+					horizontalAngle -= TWO_PI;
+				}
+
+				group1.position.y = Math.sin(horizontalAngle) * 40 + 70;
+				group1.rotation.z += 0.002;
+				group1.rotation.y += 0.002;
+				// group1.position.y += (travelUp) ? 1.2 : -1.0;
+
+				groupShadow.update( groundPlane, lightPosition4D );
+				camera.position.x += ( mouseX - camera.position.x ) * 0.05;
+				camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
+
+				var pCount = particleCount - 1;
+
+				// particleSystem.rotation.y += 0.02;
+				while (--pCount) {
+
+				  // get the particle
+				  var particle = particleSystem.geometry.vertices[pCount];
+
+				  // check if we need to reset
+				  if (particle.position && particle.position.y < -200) {
+				    particle.position.y = 200;
+				    particle.velocity.y = 0;
+				  }
+
+				  // // update the velocity with
+				  // // a splat of randomniz
+				  if (particle && particle.velocity) {
+				  	particle.velocity.y += Math.random() + 2;
+				  }
+
+				  // // and the position
+				}
+
+				particleSystem.geometry.vertices.needsUpdate = true;
+
+				// particleSystem.rotation.x += Math.tan(0.2);
+				particleSystem.rotation.y += 0.02;
+				particleSystem.rotation.z += Math.abs(Math.cos(0.005* horizontalAngle) / 50) + 0.02;
+				particleSystem.rotation.x += Math.abs(Math.cos(0.005* horizontalAngle) / 50) + 0.02;
+
+				camera.lookAt( scene.position );
+
+				renderer.render( scene, camera );
+
+				step += 0.005;
+				var count = 0;
+				var geometry = ps.geometry;
+				geometry.vertices.forEach(function (v) {
+				    // calculate new value for the y value
+				    v.y = ( Math.sin((v.x / 20 + step) * Math.PI * 2)
+				    + Math.cos((v.z / 5 + step * 2) * Math.PI)
+				    + Math.sin((v.x + v.y + step * 2) / 4 * Math.PI)) / 2;
+				    // and calculate new colors
+				    geometry.colors[count++] = new THREE.Color(v.y, 0.5, 0.7);
+				});
+				geometry.verticesNeedUpdate = true;
+				geometry.colorsNeedUpdate = true;
+			}
+
+			function setupParticleSystem(x, y) {
+			        var geometry = new THREE.Geometry();
+			        var pSize = [];
+			        var pOpacity = [];
+			        // create the geometry and set custom values
+			        for (var i = 0; i < x; i++) {
+			            for (var j = 0; j < y; j++) {
+			                var v = new THREE.Vector3();
+			                v.x = i / 10;
+			                v.y = 0;
+			                v.z = j / 10;
+			                // add the vertex
+			                geometry.vertices.push(v);
+			                // add vertex specific color, size and opacity
+			                geometry.colors.push(new THREE.Color(v.y, 0.5, 0.7));
+			                pSize.push(Math.random());
+			                pOpacity.push(Math.random() / 4 + 0.5);
+			            }
+			        }
+			        // define the attributes that get sent to the shader
+			        // there should be an attribute for each individual vertex
+			        var attributes = {
+			            pSize: {type: 'f', value: pSize},
+			            pOpacity: {type: 'f', value: pOpacity}
+			        };
+			        // we'll get the basic shader stuff, so we don't have to define all the uniforms oursevles
+			        // set all the configuration for the shader here. These apply to all vertices
+			        var basicShader = THREE.ShaderLib['particle_basic'];
+			        var uniforms = THREE.UniformsUtils.merge([basicShader.uniforms]);
+			        uniforms['map'].value = THREE.ImageUtils.loadTexture("me/ps_smoke_64.png");
+			        uniforms['size'].value = 100;
+			        uniforms['opacity'].value = 0.5;
+			        uniforms['psColor'].value = new THREE.Color(0xffffff);
+			        // Create a shadermaterial and add our shaders and our attributes and uniforms
+			        var psMat2 = new THREE.ShaderMaterial({
+			            attributes: attributes,
+			            uniforms: uniforms,
+			            transparent: true,
+			            blending: THREE.AdditiveBlending,
+			            vertexShader: document.
+			                    getElementById('particleVertexShader').text,
+			            fragmentShader: document.
+			                    getElementById('particleFragmentShader').text
+			        });
+			        // Create a new particle system based on the provided geometry
+			        // and provided shader material
+			        ps = new THREE.PointCloud(geometry, psMat2);
+			        ps.sortParticles = true;
+			        // position it in the middle
+			        ps.position.x -= x / 20;
+			        ps.position.z -= x / 20;
+			        // add the particle system to the scene
+			        scene.add(ps);
+			    }
+
+		</script>
+
+	</body>
+</html>
