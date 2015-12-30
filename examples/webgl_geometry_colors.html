@@ -177,7 +177,7 @@
 
 				var color, f, p, n, vertexIndex,
 
-				geometry  = new THREE.IcosahedronGeometry( radius, 1 );
+				geometry  = new THREE.IcosahedronGeometry( radius, 0 );
 				// geometry2 = new THREE.IcosahedronGeometry( radius + 60, 3);
 				// for ( var i = 0; i < geometry.faces.length; i ++ ) {
 				// 	f  = geometry.faces[ i ];
@@ -377,12 +377,12 @@
 				particleSystem2.geometry.colorsNeedUpdate = true;
 				// group3.rotation.y += frequencyData[200]/6000;
 				// group3.rotation.z += (0.008) + frequencyData[400]/6000;
-				group1.scale.set(Math.min(frequencyData[300]/100, 1.2), Math.min(frequencyData[300]/100, 1.4), Math.min(frequencyData[300]/100, 1.2));
+				group1.scale.set(Math.min(frequencyData[300]/100 * 1.2, 1.2), Math.min(frequencyData[300]/100 * 1.2, 1.4) + 0.8, Math.min(frequencyData[300]/100 + 0.8, 1.2));
 				// console.log(frequencyData);
 				// group2.position.y = Math.sin(horizontalAngle) * 40 + 70;
 
-				group1.rotation.z -= 0.002;
-				group1.rotation.y += 0.01;
+				group1.rotation.x -= frequencyData[300]/500 + 0.008;
+				group1.rotation.y += frequencyData[300]/300 + 0.005;
 				// group3.rotation.y += 0.003;
 				// group3.rotation.y += 0.005;
 				// group3.rotation.y -= 0.015;
