@@ -177,7 +177,7 @@
 
 				var color, f, p, n, vertexIndex,
 
-				geometry  = new THREE.IcosahedronGeometry( radius, 0 );
+				geometry  = new THREE.IcosahedronGeometry( radius, 1 );
 				// geometry2 = new THREE.IcosahedronGeometry( radius + 60, 3);
 				// for ( var i = 0; i < geometry.faces.length; i ++ ) {
 				// 	f  = geometry.faces[ i ];
@@ -350,7 +350,7 @@
 				}
 				uniforms1.time.value += frameTime * 5;
 				camera.position.x += ( mouseX - camera.position.x ) * 0.05;
-				// camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
+				camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
 
 				particleSystem.geometry.vertices.forEach(function (v, index) {
 					v.x = (radius + 400) * Math.cos(v.angles.s) * Math.cos(v.angles.t);
@@ -365,8 +365,8 @@
 					v.y = (radius + 400) * Math.sin(v.angles.s);
 					v.z = (radius + 400) * Math.cos(v.angles.s) * Math.sin(v.angles.t);
 
-					v.angles.s = v.angles.s -  v.velocity.y/100;
-					v.angles.t = v.angles.t - v.velocity.y/50;
+					v.angles.s = v.angles.s -  v.velocity.y/50;
+					v.angles.t = v.angles.t - v.velocity.y/200;
 				});
 				// particleSystem.rotation.y += 0.01;
 				particleSystem.geometry.verticesNeedUpdate = true;
