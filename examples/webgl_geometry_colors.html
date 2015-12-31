@@ -153,7 +153,7 @@
 		  var pMaterial2 = new THREE.PointCloudMaterial( { size: 12, sizeAttenuation: false, map: sprite, alphaTest: 0.5, transparent: true } );
 			pMaterial2.color.setHSL( 0.0, 0.0, 0.2 );
 
-			var radius = 60;
+			var radius = 80;
 
 			init();
 			animate();
@@ -356,7 +356,7 @@
 					v.x = (radius + 70) * Math.cos(v.angles.s) * Math.cos(v.angles.t);
 					v.y = (radius + 70) * Math.sin(v.angles.s);
 					v.z = (radius + 90) * Math.cos(v.angles.s) * Math.sin(v.angles.t);
-					
+
 					v.angles.s = v.angles.s + v.velocity.y/20;
 					v.angles.t = v.angles.t + v.velocity.y/5;
 				});
@@ -373,12 +373,12 @@
 				particleSystem.geometry.colorsNeedUpdate = true;
 
 				// particleSystem2.rotation.y += 0.01;
-				particleSystem2.geometry.verticesNeedUpdate = true;
-				particleSystem2.geometry.colorsNeedUpdate = true;
+				// particleSystem2.geometry.verticesNeedUpdate = true;
+				// particleSystem2.geometry.colorsNeedUpdate = true;
 				// group3.rotation.y += frequencyData[200]/6000;
 				// group3.rotation.z += (0.008) + frequencyData[400]/6000;
 				// group1.scale.set(Math.min(frequencyData[300]/100 * 0.5, 1.2), Math.min(frequencyData[300]/100 * 0.5, 1.4) + 0.6, Math.min(frequencyData[300]/100 * 0.5, 1.2) + 0.6);
-				group1.scale.set(1.5, 1.5, 1.5);
+				// group1.scale.set(1.5, 1.5, 1.5);
 				// console.log(frequencyData);
 				// group2.position.y = Math.sin(horizontalAngle) * 40 + 70;
 
@@ -390,7 +390,11 @@
 				// } else {
 				// 	group1.rotation.z -= frequencyData[300]/1000;
 				// }
-				group1.rotation.y += frequencyData[300]/1000 + 0.005;
+				
+				
+
+				group1.rotation.y += frequencyData[280]/400;
+				group1.rotation.x -= 0.004;
 				// group3.rotation.y += 0.003;
 				// group3.rotation.y += 0.005;
 				// group3.rotation.y -= 0.015;
