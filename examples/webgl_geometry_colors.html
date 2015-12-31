@@ -143,15 +143,15 @@
 			var sprite = THREE.ImageUtils.loadTexture( "textures/sprites/disc.png" );
 
 			// create the particle variables
-			var particleCount = 1000;
+			var particleCount = 30;
 			var particles = new THREE.Geometry();
-			var pMaterial = new THREE.PointCloudMaterial( { size: 15, sizeAttenuation: false, map: sprite, alphaTest: 0.5, transparent: true } );
+			var pMaterial = new THREE.PointCloudMaterial( { size: 13, sizeAttenuation: false, map: sprite, alphaTest: 0.5, transparent: true } );
 			pMaterial.color.setHSL( 1.0, 0, 0.2 );
 
-			var particleCount2 = 3000;
+			var particleCount2 = 120;
 	    var particles2 = new THREE.Geometry();
 		  var pMaterial2 = new THREE.PointCloudMaterial( { size: 12, sizeAttenuation: false, map: sprite, alphaTest: 0.5, transparent: true } );
-			pMaterial2.color.setHSL( 0.8, 1.0, 0.2 );
+			pMaterial2.color.setHSL( 0.0, 0.0, 0.2 );
 
 			var radius = 60;
 
@@ -177,7 +177,7 @@
 
 				var color, f, p, n, vertexIndex,
 
-				geometry  = new THREE.IcosahedronGeometry( radius, 0 );
+				geometry  = new THREE.IcosahedronGeometry( radius, 2 );
 				// geometry2 = new THREE.IcosahedronGeometry( radius + 60, 3);
 				// for ( var i = 0; i < geometry.faces.length; i ++ ) {
 				// 	f  = geometry.faces[ i ];
@@ -297,7 +297,7 @@
 				group2.add( group1 );
 				group2.add( group3 );
 				group2.add( particleSystem );
-				group2.add( particleSystem2 );
+				// group2.add( particleSystem2 );
 				scene.add(group2);
 
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
@@ -353,21 +353,21 @@
 				camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
 
 				particleSystem.geometry.vertices.forEach(function (v, index) {
-					v.x = (radius + 400) * Math.cos(v.angles.s) * Math.cos(v.angles.t);
-					v.y = (radius + 400) * Math.sin(v.angles.s);
-					v.z = (radius + 400) * Math.cos(v.angles.s) * Math.sin(v.angles.t);
-
-					v.angles.s = v.angles.s + v.velocity.y/300;
-					v.angles.t = v.angles.t + v.velocity.y/200;
+					v.x = (radius + 70) * Math.cos(v.angles.s) * Math.cos(v.angles.t);
+					v.y = (radius + 70) * Math.sin(v.angles.s);
+					v.z = (radius + 90) * Math.cos(v.angles.s) * Math.sin(v.angles.t);
+					
+					v.angles.s = v.angles.s + v.velocity.y/20;
+					v.angles.t = v.angles.t + v.velocity.y/5;
 				});
-				particleSystem2.geometry.vertices.forEach(function (v, index) {
-					v.x = (radius + 400) * Math.cos(v.angles.s) * Math.cos(v.angles.t);
-					v.y = (radius + 400) * Math.sin(v.angles.s);
-					v.z = (radius + 400) * Math.cos(v.angles.s) * Math.sin(v.angles.t);
+				// particleSystem2.geometry.vertices.forEach(function (v, index) {
+				// 	v.x = (radius + 50) * Math.cos(v.angles.s) * Math.cos(v.angles.t);
+				// 	v.y = (radius + 50) * Math.sin(v.angles.s);
+				// 	v.z = (radius + 50) * Math.cos(v.angles.s) * Math.sin(v.angles.t);
 
-					v.angles.s = v.angles.s -  v.velocity.y/50;
-					v.angles.t = v.angles.t - v.velocity.y/200;
-				});
+				// 	v.angles.s = v.angles.s -  v.velocity.y/15;
+				// 	v.angles.t = v.angles.t - v.velocity.y/5;
+				// });
 				// particleSystem.rotation.y += 0.01;
 				particleSystem.geometry.verticesNeedUpdate = true;
 				particleSystem.geometry.colorsNeedUpdate = true;
@@ -377,12 +377,20 @@
 				particleSystem2.geometry.colorsNeedUpdate = true;
 				// group3.rotation.y += frequencyData[200]/6000;
 				// group3.rotation.z += (0.008) + frequencyData[400]/6000;
-				group1.scale.set(Math.min(frequencyData[300]/100 * 1.2, 1.2), Math.min(frequencyData[300]/100 * 1.2, 1.4) + 0.8, Math.min(frequencyData[300]/100 + 0.8, 1.2));
+				// group1.scale.set(Math.min(frequencyData[300]/100 * 0.5, 1.2), Math.min(frequencyData[300]/100 * 0.5, 1.4) + 0.6, Math.min(frequencyData[300]/100 * 0.5, 1.2) + 0.6);
+				group1.scale.set(1.5, 1.5, 1.5);
 				// console.log(frequencyData);
 				// group2.position.y = Math.sin(horizontalAngle) * 40 + 70;
 
-				group1.rotation.x -= frequencyData[300]/500 + 0.008;
-				group1.rotation.y += frequencyData[300]/300 + 0.005;
+				// group1.rotation.x -= frequencyData[300]/500 + 0.008;
+				// if (frequencyData[300] > 80) {
+				// 	// console.log(frequencyData[300]);
+				// 	group1.rotation.z += frequencyData[300]/500;
+				// 					// group1.scale.set(Math.min(frequencyData[300]/100 * 1.5, 1.2) + 0.6, Math.min(frequencyData[300]/100 * 1.5, 1.4) + 0.6, Math.min(frequencyData[300]/100 * 1.5, 1.2) + 0.6);
+				// } else {
+				// 	group1.rotation.z -= frequencyData[300]/1000;
+				// }
+				group1.rotation.y += frequencyData[300]/1000 + 0.005;
 				// group3.rotation.y += 0.003;
 				// group3.rotation.y += 0.005;
 				// group3.rotation.y -= 0.015;
